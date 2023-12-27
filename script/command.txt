@@ -1,0 +1,94 @@
+#remote pod
+kubectl exec -it mysql-pod -n development -- /bin/bash
+
+kubectl exec -it mysql-pod -n development -- env
+
+kubectl apply -f filename.yaml
+kubectl delete -f filename.yaml
+
+kubectl delete replicaset nginx-replica -n development
+
+kubectl delete replicaset --all -n development
+
+----------------------------------------------------------------------------------
+
+#check the validity without actually applying them
+kubectl apply --dry-run=client -f filename.yaml
+
+#see the differences between a local file and the live configuration on the cluster
+kubectl diff -f filename.yaml
+
+#Kubeval
+#Kubeval is a tool that validates your Kubernetes files against the Kubernetes API schemas. It checks for best practices as well.
+
+# Linux
+curl -L -o kubeval https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64
+chmod +x kubeval
+sudo mv kubeval /usr/local/bin/
+
+# macOS
+curl -L -o kubeval https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-darwin-amd64
+chmod +x kubeval
+sudo mv kubeval /usr/local/bin/
+
+kubeval filename.yaml
+
+----------------------------------------------------------------------------------
+
+kubectl get pod -n development
+kubectl get pv -n development
+kubectl get pvc -n development
+kubectl get svc -n development
+
+#create secret mount file
+kubectl create secret generic --from-file=ssh-key.txt
+
+#setting config
+kubectl config view
+kubectl config set-context --current --namespace=development
+
+#rollout deployment
+kubectl rollout history deployment/simple-express-1-0-0
+kubectl rollout undo deployment/simple-express-1-0-0
+
+----------------------------------------------------------------------------------
+
+#Kubernetes Dashboard
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+#Getting a Bearer Token for ServiceAccount
+https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
+
+kubectl apply -f dashboard\1.serviceaccount.yaml
+kubectl apply -f dashboard\2.clusterrolebinding.yaml
+
+kubectl -n kubernetes-dashboard create token admin-user
+
+---token---
+
+eyJhbGciOiJSUzI1NiIsImtpZCI6Ikt0cS1fTk5HbFh4NUg1cmRKMHFULXFfUW1POGdHcUx5YnlzMHV4S21ScEUifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzAwNjI2NTgzLCJpYXQiOjE3MDA2MjI5ODMsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsInNlcnZpY2VhY2NvdW50Ijp7Im5hbWUiOiJhZG1pbi11c2VyIiwidWlkIjoiOTMzZDNhZDEtZGFlZC00ZTMyLTgwYTktMGJmMGFlNDkyYjEyIn19LCJuYmYiOjE3MDA2MjI5ODMsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlcm5ldGVzLWRhc2hib2FyZDphZG1pbi11c2VyIn0.B3DilD3apBG-fwVZwIUfcI5-nqaqXy4vY-oaPjzJLyP2o2Zip1vTdwUio_ei2cJACBRwbhv3xH00a5Og-5_XAuuBARw_g6V33qZ8NzrUX-MTbuDlifvrDHGOGfvVjwo8v-Q2xkgQbWlfTmt1IWDNjSZp4OeT-gXG5vtVTI1uEgHel1a2ZVzZEoWdKYda8JQxZjGGWTRTbJ6FdOaa5yFgkE5EtyGxhtTHcZdH5DIKlThPe_NwwK3w9P5maJkrrkIgCqow55Aq_ZA552j0NdhGC9uki6a4kf4GkMdPAdQUk3oqhGFldidAatvHBpHvDrhyUyd2kaZVEpQq41nqQSMKnw
+
+---token---
+
+#We can also create a token with the secret which bound the service account and the token will be saved in the Secret:
+kubectl apply -f dashboard\3.longlivetokenforserviceaccount.yaml
+
+#After Secret is created, we can execute the following command to get the token which saved in the Secret:
+#Linux
+kubectl get secret admin-user -n kubernetes-dashboard -o jsonpath={".data.token"} | base64 -d   
+#Windows
+([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String((kubectl get secret admin-user -n kubernetes-dashboard -o jsonpath="{.data.token}"))))
+
+kubectl proxy
+
+#Access Dashboard on this link
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/workloads?namespace=default
+
+----------------------------------------------------------------------------------
+
+#Autoscaling
+https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#autoscale
+
+kubectl autoscale deployment simple-express-1-0-0 --min=2 --max=10 --cpu-percent=80

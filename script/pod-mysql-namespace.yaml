@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-dev-pod
+  labels:
+    name: mysql-dev-pod
+  namespace: development
+spec:
+  containers:
+    - name: mysql-container
+      image: mysql:latest
+      resources:
+        limits:
+          memory: "2Gi"
+          cpu: "500m"
+      env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: secretdev
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-prod-pod
+  labels:
+    name: mysql-prod-pod
+  namespace: production
+spec:
+  containers:
+    - name: mysql-container
+      image: mysql:latest
+      resources:
+        limits:
+          memory: "2Gi"
+          cpu: "500m"
+      env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: secret

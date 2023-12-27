@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: example-job
+spec:
+  # ttlSecondsAfterFinished: 100
+  completions: 4
+  parallelism: 2
+  template:
+    spec:
+      containers:
+        - name: job-container
+          image: busybox:1.34
+          command: ["echo", "Hello from the job!"]
+      restartPolicy: Never

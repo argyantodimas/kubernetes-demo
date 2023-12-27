@@ -1,0 +1,174 @@
+---
+#config and secret
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+data:
+  MYSQL_DATABASE: mydb
+  MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: node-app-config
+data:
+  MYSQL_HOST: "service-mysql"
+  MYSQL_USER: "root"
+  MYSQL_DATABASE: "mydb"
+  MYSQL_PORT: "3306"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+data:
+  MYSQL_ROOT_PASSWORD: c2VjcmV0
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: node-app-secret
+type: Opaque
+data:
+  MYSQL_PASSWORD: c2VjcmV0
+
+---
+#deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deploy-api
+  template:
+    metadata:
+      labels:
+        app: deploy-api
+    spec:
+      containers:
+        - name: myapp
+          image: argyantodimasn/deploy-api:1.0
+          envFrom:
+            - configMapRef:
+                name: node-app-config
+            - secretRef:
+                name: node-app-secret
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-deploy-api
+spec:
+  selector:
+    app: deploy-api
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 3000
+  type: LoadBalancer
+
+---
+#pod for mysql database
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mydb
+  labels:
+    app: mydb
+spec:
+  containers:
+    - name: mydb
+      image: mysql:latest
+      envFrom:
+        - configMapRef:
+            name: mysql-config
+        - secretRef:
+            name: mysql-secret
+      # env:
+      #   - name: MYSQL_ROOT_PASSWORD
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: mysql-secret
+      #         key: MYSQL_ROOT_PASSWORD
+      #   - name: MYSQL_DATABASE
+      #     valueFrom:
+      #       configMapKeyRef:
+      #         name: mysql-config
+      #         key: MYSQL_DATABASE
+      #   - name: MYSQL_PASSWORD
+      #     valueFrom:
+      #       configMapKeyRef:
+      #         name: node-app-secret
+      #         key: MYSQL_PASSWORD
+      resources:
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
+      ports:
+        - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-mysql
+spec:
+  selector:
+    app: mydb
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+
+---
+#phpmyadmin
+apiVersion: v1
+kind: Pod
+metadata:
+  name: phpmyadmin
+  labels:
+    app: phpmyadmin
+spec:
+  containers:
+    - name: phpmyadmin
+      image: phpmyadmin:latest
+      env:
+        - name: PMA_HOSTS
+          value: service-mysql
+        - name: PMA_PORT
+          value: "3306"
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_ROOT_PASSWORD
+      resources:
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
+      ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-phpmyadmin
+spec:
+  selector:
+    app: phpmyadmin
+  ports:
+    - protocol: TCP
+      port: 8500
+      targetPort: 80
+  type: LoadBalancer

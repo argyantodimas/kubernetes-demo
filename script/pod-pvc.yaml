@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-pvc-example-dev
+  labels:
+    name: pod-pvc-example-dev
+  namespace: development
+spec:
+  containers:
+    - name: pod-pvc-container
+      image: nginx:latest
+      resources:
+        limits:
+          memory: "128Mi"
+          cpu: "500m"
+      volumeMounts:
+        - name: pod-pvc-volume
+          mountPath: /mnt/data
+  volumes:
+    - name: pod-pvc-volume
+      persistentVolumeClaim:
+        claimName: pvc-example-2

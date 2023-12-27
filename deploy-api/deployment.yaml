@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: node-app-config
+data:
+  MYSQL_HOST: "service-mysql"
+  MYSQL_USER: "root"
+  MYSQL_DATABASE: "mydb"
+  MYSQL_PORT: "3306"
